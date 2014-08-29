@@ -4,4 +4,123 @@
   <target name="help">
     <echo>Please specify a target to do somephing : {phirst-setup, deploy, mysqldumb, test}</echo>
   </target>
+
+  <!--_________________________________ 
+     |                                 |
+     |    prepare the file structure   |
+     |_________________________________|-->
+  <target name="phirst-setup">
+    <if>
+      <not>
+        <available file=".git" type="dir" />
+      </not>
+      <then>
+        <exec passthru="true" command="git clone --bare ${project.repourl}/${project.repowner}/${project.reponame}.git" />
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="sql" type="dir" />
+      </not>
+      <then>
+        <mkdir dir="sql" />
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="releases" type="dir" />
+      </not>
+      <then>
+        <mkdir dir="releases" />
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="maintenance" type="dir" />
+      </not>
+      <then>
+        <mkdir dir="maintenance" />
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="maintenance/robots.txt" type="file" />
+      </not>
+      <then>
+        <echo file="maintenance/robots.txt" append="false" msg="User-agent: *${line.separator}Disallow: /${line.separator}" />
+        <echo>Created the maintenance/robots.txt file.</echo>
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="maintenance/index.html" type="file" />
+      </not>
+      <then>
+        <echo file="maintenance/index.html" append="false" msg="Le site est en maintenance." />
+        <echo>Created the maintenance/index.html file.</echo>
+      </then>
+    </if> 
+    <if>
+      <not>
+        <available file="noaccess" type="dir" />
+      </not>
+      <then>
+        <mkdir dir="noaccess" />
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="noaccess/robots.txt" type="file" />
+      </not>
+      <then>
+        <echo file="noaccess/robots.txt" append="false" msg="User-agent: *${line.separator}Disallow: /${line.separator}" />
+        <echo>Created the noaccess/robots.txt file.</echo>
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="noaccess/index.html" type="file" />
+      </not>
+      <then>
+        <echo file="noaccess/index.html" append="false" msg="Le site n'est pas accessible actuellement." />
+        <echo>Created the noaccess/index.html file.</echo>
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="noaccess/.htpasswd" type="file" />
+      </not>
+      <then>
+        <echo file="noaccess/.htpasswd" append="false" msg="" />
+        <echo>Created the noaccess/.htpasswd file.</echo>
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="prev" type="file" />
+      </not>
+      <then>
+        <exec command="ln -s maintenance/index.html prev" />
+        <echo>Created the prev pointer.</echo>
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="current" type="file" />
+      </not>
+      <then>
+        <exec command="ln -s maintenance/index.html current" />
+        <echo>Created the current pointer.</echo>
+      </then>
+    </if>
+    <if>
+      <not>
+        <available file="next" type="file" />
+      </not>
+      <then>
+        <exec command="ln -s maintenance/index.html next" />
+        <echo>Created the next pointer.</echo>
+      </then>
+    </if>
+  </target>
 </project>
