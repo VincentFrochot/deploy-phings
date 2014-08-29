@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="deploy-phings" default="help" basedir="." description="deploying and configuring Symfony2 projects">
+  <property file="build.properties" prefix="project" />
+  <target name="help">
+    <echo>Please specify a target to do somephing : {phirst_setup, deploy, mysqldumb, test}</echo>
+  </target>
+</project>
