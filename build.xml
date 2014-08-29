@@ -4,7 +4,92 @@
   <target name="help">
     <echo>Please specify a target to do somephing : {phirst-setup, deploy, mysqldumb, test}</echo>
   </target>
-
+  <target name="init">
+    <if>
+      <not>
+        <isset property="project.env" />
+      </not>
+      <then>
+        <property name="project.env" value="dev" />
+      </then>
+    </if>
+    <if>
+      <not>
+        <isset property="project.tag" />
+        <then>
+          <!-- depends on the environment :
+		dev 		=> master-dev branch
+		preprod 	=> "
+		prodvalid 	=> highest tag
+		prod		=> "
+ 	  -->
+          <if>
+            <or>
+              <equals arg1="${project.env}" arg2="prodvalid" />
+              <equals arg1="${project.env}" arg2="prod" />
+            </or>
+            <then>
+              <exec dir="${project.reponame}.git" outputProperty="project.tag" command="git describe --tags `git rev-list --tags --max-count=1`" />
+            </then>
+          </if>
+        </then>
+      <not>
+    </if>
+  </target>
+  <!--___________________________________ 
+     |                                   |
+     |  generate & insert the prod dump  |
+     |___________________________________|-->
+  <target name="mysqldumb">
+    <if> <!-- on a different machine: {dev, preprod} -->
+      <or>
+        <equals arg1="${project.env}" arg2="dev" />
+        <equals arg1="${project.env}" arg2="preprod" />
+      </or>
+      <then>
+        <exec outputProperty="lastdump" command="ssh ${project.ssh_user}@${project.ssh_host} 'cd /home/${project.name} &amp;&amp; ls | grep dump${tagnumber}.sql'"/>
+        <echo>déjà présent sur le serveur : ${lastdump}</echo>
+        <if>
+          <not>
+            <equals arg1="dump${tagnumber}.sql" arg2="${lastdump}" />
+          </not>
+          <then>
+            <echo>Generating dump${tagnumber}.sql on the server...</echo>
+            <exec command="ssh root@${project.ssh_host} 'cd /home/immojeune; mysqldump -u${project.remote_dbuser} -p${project.remote_dbpwd} ${project.remote_dbname} > dump${tagnumber}.sql'"/>
+<!--              <ssh username="root" password="${project.ssh_pwd}" host="${project.ssh_host}" command="cd /home/immojeune &amp;&amp; mysqldump -u${project.remote_dbuser} -p${project.remote_dbpwd} ${project.remote_dbname} > dump${tagnumber}.sql" /> -->
+          </then>
+        </if>
+          <exec outputProperty="locallastdump" command="cd sql &amp;&amp; ls | grep dump${tagnumber}.sql"/>
+          <echo>déjà présent en local : ${locallastdump}</echo>
+        <if>
+          <not>
+            <equals arg1="dump${tagnumber}.sql" arg2="${locallastdump}" />
+          </not>
+          <then>
+            <echo>Transfering dump${tagnumber}.sql to local sql folder...</echo>
+            <exec command="scp -v root@${project.ssh_host}:/home/immojeune/dump${tagnumber}.sql sql"/>
+          </then>
+        </if>
+<!--        <scp fetch="true" level="debug" todir="sql" username="root" password="${project.ssh_pwd}" host="${project.ssh_host}" file="dump${tagnumber}.sql" /> -->
+        <exec dir="sql" passthru="true" command="mysql -u${project.dbuser} -p${project.dbpwd} ${project.dbname} &lt; dump${tagnumber}.sql" />
+      </then>
+      <elseif> <!-- prodvalid -->
+        <equals arg1="${project.env}" arg2="prodvalid" />
+        <then>
+          <exec dir="sql" passthru="true" outputProperty="lastdump" command="ls | grep dump${tagnumber}.sql" />
+          <if>
+            <not>
+              <equals arg1="dump${tagnumber}.sql" arg2="${lastdump}" />
+            </not>
+            <then> <!-- the dump is not there -->
+              <exec dir="sql" passthru="true" command="mysqldump -u${project.remote_dbuser} -p${project.remote_dbpwd} ${project.remote_dbname} > dump${tagnumber}.sql" />
+            </then>
+          </if>
+          <exec dir="sql" passthru="true" command="mysql -u${project.dbuser} -p${project.dbpwd} ${project.dbname} &lt; dump${tagnumber}.sql" />
+        </then>
+      </elseif>
+    </if>
+  </target>
   <!--_________________________________ 
      |                                 |
      |    prepare the file structure   |
